@@ -125,8 +125,46 @@ class Object {
     std::vector<ObjectPtr> data_;
   };
 
+#ifdef USE_VECTOR_MOCK_MAP
+  class UntypedMap : public std::vector<std::pair<ObjectPtr, ObjectPtr>> {
+   public:
+    using ValueType = std::pair<ObjectPtr, ObjectPtr>;
+    using Iterator = std::vector<std::pair<ObjectPtr, ObjectPtr>>::iterator;
+    using ConstIterator =
+        std::vector<std::pair<ObjectPtr, ObjectPtr>>::const_iterator;
+
+    Iterator find(const ObjectPtr& key) {
+      for (auto i = begin(); i != end(); i++) {
+        if (i->first->equal(*key)) {
+          return i;
+        }
+      }
+      return end();
+    }
+    ConstIterator find(const ObjectPtr& key) const {
+      for (auto i = begin(); i != end(); i++) {
+        if (i->first->equal(*key)) {
+          return i;
+        }
+      }
+      return end();
+    }
+
+    std::pair<Iterator, bool> emplace(ObjectPtr&& key, ObjectPtr&& value) {
+      emplace_back(std::make_pair<ObjectPtr, ObjectPtr>(std::move(key),
+                                                        std::move(value)));
+      return std::make_pair<Iterator, bool>(end()--, true);
+    }
+
+    std::pair<Iterator, bool> emplace(ValueType&& key_value) {
+      emplace_back(std::move(key_value));
+      return std::make_pair<Iterator, bool>(end()--, true);
+    }
+  };
+#else
   using UntypedMap =
       std::unordered_map<ObjectPtr, ObjectPtr, ObjectHasher, ObjectEqual>;
+#endif
 
   struct TypedMap {
     TypedMap() = default;
@@ -297,7 +335,7 @@ class Object {
     if (o.type() != ObjectType) {                                           \
       return false;                                                         \
     }                                                                       \
-    ABSL_ASSERT(o.to##MethodName().has_value());                             \
+    ABSL_ASSERT(o.to##MethodName().has_value());                            \
     return o.to##MethodName().value() == data_;                             \
   }
 
@@ -311,7 +349,7 @@ class Object {
     if (o.type() != ObjectType) {                                  \
       return false;                                                \
     }                                                              \
-    ABSL_ASSERT(o.to##MethodName().has_value());                    \
+    ABSL_ASSERT(o.to##MethodName().has_value());                   \
     return *o.to##MethodName().value() == data_;                   \
   }
 
