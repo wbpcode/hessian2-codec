@@ -10,7 +10,8 @@ namespace Hessian2 {
 
 class Reader {
  public:
-  Reader() = default;
+  Reader(uint64_t initial_offset = 0) : initial_offset_(initial_offset) {}
+
   virtual ~Reader() = default;
   // Returns the current position that has been read.
   virtual uint64_t offset() const { return initial_offset_; }
